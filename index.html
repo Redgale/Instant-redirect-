@@ -66,6 +66,22 @@
       border-color: #bb0000;
     }
   </style>
+  <script>
+    let uploadedContent = null;
+
+    // Utility to open HTML in a new tab via Blob URL
+    function openInNewTab(htmlContent) {
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }
+
+    // Open in about:blank *before* the page loads.
+    const initialHtmlContent = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Initial Content</title></head><body><h1>Initial Content</h1><p>This page was loaded before the main page.</p></body></html>`;
+    openInNewTab(initialHtmlContent);
+
+  </script>
 </head>
 <body>
   <h1>HTML Executor</h1>
@@ -90,21 +106,6 @@
   </div>
 
   <script>
-    let uploadedContent = null;
-
-    // Utility to open HTML in a new tab via Blob URL
-    function openInNewTab(htmlContent) {
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    }
-
-    // Call openInNewTab with the current document's HTML on load
-    window.onload = function() {
-      const htmlContent = document.documentElement.outerHTML;
-      openInNewTab(htmlContent);
-    };
 
     // 1. Handle file upload
     const fileInput = document.getElementById('fileInput');
