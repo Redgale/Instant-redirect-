@@ -82,6 +82,7 @@
     const modal = document.getElementById('modal-backdrop');
     const siteContent = document.getElementById('site-content');
 
+    // The executor HTML, output will use a Blob URL in a new tab
     const executorHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -97,9 +98,6 @@
     button { background-color: #770000; color: #f0d0d0; border: 1px solid #990000; border-radius: 3px; padding: 0.5em 1em; margin-top: 0.5em; cursor: pointer; font-weight: bold; }
     button:disabled { background-color: #550000; border-color: #770000; cursor: not-allowed; opacity: 0.6; }
     button:hover:not(:disabled) { background-color: #990000; border-color: #bb0000; }
-    .output-container { margin-top: 2em; max-width: 90vw; }
-    .output-label { font-weight: bold; margin-bottom: 0.5em; color: #ff8888; }
-    #outputFrame { width: 100%; min-height: 40vh; background: #fff; border: 2px solid #770000; border-radius: 6px; margin-top: 0.5em; }
   </style>
 </head>
 <body>
@@ -121,16 +119,18 @@
     </label>
     <button id="fetchUrlBtn">Fetch & Run</button>
   </div>
-  <div class="output-container">
-    <div class="output-label">Output:</div>
-    <iframe id="outputFrame" sandbox="allow-scripts allow-forms allow-modals allow-downloads"></iframe>
-  </div>
   <script>
     let uploadedContent = null;
-    function loadInIframe(htmlContent) {
-      const iframe = document.getElementById('outputFrame');
-      iframe.srcdoc = htmlContent;
+
+    // Open HTML in a new tab using Blob URL
+    function openInNewTab(htmlContent) {
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     }
+
+    // 1. File upload + run
     const fileInput = document.getElementById('fileInput');
     const runFileBtn = document.getElementById('runFileBtn');
     fileInput.addEventListener('change', evt => {
@@ -147,14 +147,18 @@
     });
     runFileBtn.addEventListener('click', () => {
       if (uploadedContent !== null) {
-        loadInIframe(uploadedContent);
+        openInNewTab(uploadedContent);
       }
     });
+
+    // 2. Paste code
     document.getElementById('runCodeBtn').addEventListener('click', () => {
       const code = document.getElementById('codeInput').value;
       if (!code.trim()) return alert('Paste some HTML code first!');
-      loadInIframe(code);
+      openInNewTab(code);
     });
+
+    // 3. Fetch from URL
     document.getElementById('fetchUrlBtn').addEventListener('click', () => {
       const url = document.getElementById('urlInput').value.trim();
       if (!url) return alert('Enter a URL first');
@@ -164,7 +168,7 @@
           return res.text();
         })
         .then(html => {
-          loadInIframe(html);
+          openInNewTab(html);
         })
         .catch(err => {
           alert('Fetch error: ' + err.message);
