@@ -4,29 +4,52 @@
   <meta charset="UTF-8">
   <title>Launcher</title>
   <script>
-    // Immediately open a new tab and write the full executor HTML into it
     (function() {
+      // Full HTML of the executor page:
       const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>HTML Executor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
+    /* Reset everything to border-box */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;        /* hide unwanted scrollbars */
       background-color: #2b0000;
       color: #f0d0d0;
       font-family: sans-serif;
-      margin: 1em;
     }
-    h1 { color: #ff5555; margin-bottom: 0.5em; }
+    body {
+      padding: 1em;
+    }
+    h1 {
+      color: #ff5555;
+      margin-bottom: 0.5em;
+    }
     .controls {
       background-color: #330000;
       border: 1px solid #550000;
       padding: 1em;
       border-radius: 4px;
+      max-height: calc(100% - 4em);
+      overflow-y: auto;        /* scroll only if content really overflows */
     }
-    label { display: block; margin-top: 0.75em; font-weight: bold; }
-    input[type="file"], input[type="text"], textarea {
+    label {
+      display: block;
+      margin-top: 0.75em;
+      font-weight: bold;
+    }
+    input[type="file"],
+    input[type="text"],
+    textarea {
       background-color: #440000;
       color: #f0d0d0;
       border: 1px solid #660000;
@@ -34,9 +57,12 @@
       padding: 0.5em;
       font-family: monospace;
       width: 100%;
-      box-sizing: border-box;
+      margin-top: 0.25em;
     }
-    textarea { height: 20vh; resize: vertical; }
+    textarea {
+      height: 20vh;
+      resize: vertical;
+    }
     button {
       background-color: #770000;
       color: #f0d0d0;
@@ -80,7 +106,6 @@
     </label>
     <button id="fetchUrlBtn">Fetch & Run</button>
   </div>
-
   <script>
     let uploadedContent = null;
     function openInNewTab(htmlContent) {
@@ -131,8 +156,10 @@
   </script>
 </body>
 </html>`;
+      // Open and inject
       const w = window.open('about:blank', '_blank');
       if (w) {
+        w.document.open();
         w.document.write(html);
         w.document.close();
       }
@@ -140,9 +167,8 @@
   </script>
 </head>
 <body>
-  <!-- You can leave this page empty or add a message -->
   <noscript>
-    Please enable JavaScript to launch the HTML Executor in a new tab.
+    JavaScript is required to launch the HTML Executor.
   </noscript>
 </body>
 </html>
