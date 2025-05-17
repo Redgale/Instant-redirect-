@@ -2,34 +2,198 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>HTML Executor Loader</title>
-  <script src="instant-html-executor.js"></script>
+  <title>HTML Executor Launcher</title>
   <style>
     body {
       background: #220000;
       color: #f0d0d0;
       font-family: sans-serif;
+      margin: 0;
+    }
+    #modal-backdrop {
+      position: fixed;
+      z-index: 9999;
+      left: 0; top: 0; right: 0; bottom: 0;
+      background: rgba(20,0,0,0.93);
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      margin: 0;
     }
-    .msg {
-      padding: 2em 3em;
+    #modal-dialog {
       background: #330000;
+      border: 2px solid #700000;
       border-radius: 10px;
-      border: 1px solid #550000;
-      box-shadow: 0 0 10px #220000;
-      font-size: 1.2em;
+      box-shadow: 0 0 30px #200;
+      padding: 2.5em 2em 2em 2em;
       text-align: center;
+      max-width: 350px;
+    }
+    #modal-dialog h2 {
+      color: #ff5555;
+    }
+    #modal-dialog button {
+      font-size: 1.05em;
+      background: #770000;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.7em 2em;
+      margin: 0.5em 1em;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 2px 12px #200;
+      transition: background 0.2s;
+    }
+    #modal-dialog button:hover {
+      background: #990000;
+    }
+    #site-content {
+      opacity: 0.25;
+      pointer-events: none;
+      user-select: none;
+    }
+    #site-content.enabled {
+      opacity: 1;
+      pointer-events: auto;
+      user-select: auto;
     }
   </style>
 </head>
 <body>
-  <div class="msg">
-    Loading the <b>HTML Executor</b> in a new tab...<br>
-    If nothing happens, please enable pop-ups and reload this page.
+  <div id="modal-backdrop">
+    <div id="modal-dialog">
+      <h2>Open HTML Executor</h2>
+      <p>This site requires you to open the HTML Executor in a new tab before continuing.</p>
+      <button id="openBtn">Open HTML Executor</button>
+      <button id="continueBtn" disabled>Continue</button>
+      <div style="margin-top:1em; font-size:0.95em; color: #ffbbbb;">
+        <em>If nothing happens, please allow pop-ups for this site.</em>
+      </div>
+    </div>
   </div>
+  <div id="site-content">
+    <!-- Your actual site content goes here -->
+    <h1>Welcome to My Website</h1>
+    <p>This content will be enabled after you launch the HTML Executor.</p>
+  </div>
+  <script>
+    const openBtn = document.getElementById('openBtn');
+    const continueBtn = document.getElementById('continueBtn');
+    const modal = document.getElementById('modal-backdrop');
+    const siteContent = document.getElementById('site-content');
+
+    const executorHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML Executor</title>
+  <style>
+    body { background-color: #2b0000; color: #f0d0d0; font-family: sans-serif; margin: 1em; }
+    h1 { color: #ff5555; margin-bottom: 0.5em; }
+    .controls { background-color: #330000; border: 1px solid #550000; padding: 1em; border-radius: 4px; max-width: 640px; margin-bottom: 1em; }
+    label { display: block; margin-top: 0.75em; font-weight: bold; }
+    input[type="file"],input[type="text"],textarea { background-color: #440000; color: #f0d0d0; border: 1px solid #660000; border-radius: 3px; padding: 0.5em; font-family: monospace; width: 100%; box-sizing: border-box; }
+    textarea { height: 20vh; resize: vertical; }
+    button { background-color: #770000; color: #f0d0d0; border: 1px solid #990000; border-radius: 3px; padding: 0.5em 1em; margin-top: 0.5em; cursor: pointer; font-weight: bold; }
+    button:disabled { background-color: #550000; border-color: #770000; cursor: not-allowed; opacity: 0.6; }
+    button:hover:not(:disabled) { background-color: #990000; border-color: #bb0000; }
+    .output-container { margin-top: 2em; max-width: 90vw; }
+    .output-label { font-weight: bold; margin-bottom: 0.5em; color: #ff8888; }
+    #outputFrame { width: 100%; min-height: 40vh; background: #fff; border: 2px solid #770000; border-radius: 6px; margin-top: 0.5em; }
+  </style>
+</head>
+<body>
+  <h1>HTML Executor</h1>
+  <div class="controls">
+    <label>
+      Upload .html or .txt file:
+      <input type="file" id="fileInput" accept=".html,.txt">
+    </label>
+    <button id="runFileBtn" disabled>Run Uploaded File</button>
+    <label>
+      Paste your HTML code here:
+      <textarea id="codeInput" placeholder="&lt;h1&gt;Hello world&lt;/h1&gt;"></textarea>
+    </label>
+    <button id="runCodeBtn">Run Code</button>
+    <label>
+      Load HTML from URL:
+      <input type="text" id="urlInput" placeholder="https://example.com/page.html">
+    </label>
+    <button id="fetchUrlBtn">Fetch & Run</button>
+  </div>
+  <div class="output-container">
+    <div class="output-label">Output:</div>
+    <iframe id="outputFrame" sandbox="allow-scripts allow-forms allow-modals allow-downloads"></iframe>
+  </div>
+  <script>
+    let uploadedContent = null;
+    function loadInIframe(htmlContent) {
+      const iframe = document.getElementById('outputFrame');
+      iframe.srcdoc = htmlContent;
+    }
+    const fileInput = document.getElementById('fileInput');
+    const runFileBtn = document.getElementById('runFileBtn');
+    fileInput.addEventListener('change', evt => {
+      const file = evt.target.files[0];
+      uploadedContent = null;
+      runFileBtn.disabled = true;
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        uploadedContent = e.target.result;
+        runFileBtn.disabled = false;
+      };
+      reader.readAsText(file);
+    });
+    runFileBtn.addEventListener('click', () => {
+      if (uploadedContent !== null) {
+        loadInIframe(uploadedContent);
+      }
+    });
+    document.getElementById('runCodeBtn').addEventListener('click', () => {
+      const code = document.getElementById('codeInput').value;
+      if (!code.trim()) return alert('Paste some HTML code first!');
+      loadInIframe(code);
+    });
+    document.getElementById('fetchUrlBtn').addEventListener('click', () => {
+      const url = document.getElementById('urlInput').value.trim();
+      if (!url) return alert('Enter a URL first');
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error(\`Status \${res.status}\`);
+          return res.text();
+        })
+        .then(html => {
+          loadInIframe(html);
+        })
+        .catch(err => {
+          alert('Fetch error: ' + err.message);
+        });
+    });
+  <\/script>
+</body>
+</html>`;
+
+    openBtn.onclick = function() {
+      // Try to open the executor in about:blank
+      const win = window.open('about:blank', '_blank');
+      if (win) {
+        win.document.write(executorHTML);
+        win.document.close();
+        continueBtn.disabled = false;
+        openBtn.textContent = "Re-open HTML Executor";
+      } else {
+        alert('Popup blocked! Please allow popups for this site.');
+      }
+    };
+
+    continueBtn.onclick = function() {
+      modal.style.display = 'none';
+      siteContent.classList.add('enabled');
+    };
+
+    // Prevent access to page content until modal is dismissed
+    siteContent.classList.remove('enabled');
+  </script>
 </body>
 </html>
