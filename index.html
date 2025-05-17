@@ -3,63 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <title>Launcher</title>
-</head>
-<body>
-  <!-- embed the full executor page as plain text so we never need to escape backticks -->
-  <script id="executor-template" type="text/plain">
-<!DOCTYPE html>
+  <script>
+    // Immediately open a new tab and write the full executor HTML into it
+    (function() {
+      const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>HTML Executor</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { margin:0; padding:0; overflow-x:hidden; }
     body {
-      background-color:#2b0000;
-      color:#f0d0d0;
-      font-family:sans-serif;
-      margin:1em;
+      background-color: #2b0000;
+      color: #f0d0d0;
+      font-family: sans-serif;
+      margin: 1em;
     }
-    h1 { color:#ff5555; margin-bottom:.5em; }
+    h1 { color: #ff5555; margin-bottom: 0.5em; }
     .controls {
-      background-color:#330000;
-      border:1px solid #550000;
-      padding:1em;
-      border-radius:4px;
-      max-width:800px;
-      margin:auto;
+      background-color: #330000;
+      border: 1px solid #550000;
+      padding: 1em;
+      border-radius: 4px;
     }
-    label { display:block; margin-top:.75em; font-weight:bold; }
-    input[type=file], input[type=text], textarea {
-      background-color:#440000;
-      color:#f0d0d0;
-      border:1px solid #660000;
-      border-radius:3px;
-      padding:.5em;
-      font-family:monospace;
-      width:100%;
+    label { display: block; margin-top: 0.75em; font-weight: bold; }
+    input[type="file"], input[type="text"], textarea {
+      background-color: #440000;
+      color: #f0d0d0;
+      border: 1px solid #660000;
+      border-radius: 3px;
+      padding: 0.5em;
+      font-family: monospace;
+      width: 100%;
+      box-sizing: border-box;
     }
-    textarea { height:20vh; resize:vertical; }
+    textarea { height: 20vh; resize: vertical; }
     button {
-      background-color:#770000;
-      color:#f0d0d0;
-      border:1px solid #990000;
-      border-radius:3px;
-      padding:.5em 1em;
-      margin-top:.5em;
-      cursor:pointer;
-      font-weight:bold;
+      background-color: #770000;
+      color: #f0d0d0;
+      border: 1px solid #990000;
+      border-radius: 3px;
+      padding: 0.5em 1em;
+      margin-top: 0.5em;
+      cursor: pointer;
+      font-weight: bold;
     }
     button:disabled {
-      background-color:#550000;
-      border-color:#770000;
-      cursor:not-allowed;
-      opacity:.6;
+      background-color: #550000;
+      border-color: #770000;
+      cursor: not-allowed;
+      opacity: 0.6;
     }
     button:hover:not(:disabled) {
-      background-color:#990000;
-      border-color:#bb0000;
+      background-color: #990000;
+      border-color: #bb0000;
     }
   </style>
 </head>
@@ -87,60 +83,66 @@
 
   <script>
     let uploadedContent = null;
-    function openInNewTab(html) {
-      const blob = new Blob([html], { type: 'text/html' });
-      const url  = URL.createObjectURL(blob);
+    function openInNewTab(htmlContent) {
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     }
 
-    // File upload handling
-    document.getElementById('fileInput').addEventListener('change', e => {
-      const f = e.target.files[0];
+    // 1. File upload
+    const fileInput = document.getElementById('fileInput');
+    const runFileBtn = document.getElementById('runFileBtn');
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
       uploadedContent = null;
-      document.getElementById('runFileBtn').disabled = true;
-      if (!f) return;
+      runFileBtn.disabled = true;
+      if (!file) return;
       const reader = new FileReader();
       reader.onload = ev => {
         uploadedContent = ev.target.result;
-        document.getElementById('runFileBtn').disabled = false;
+        runFileBtn.disabled = false;
       };
-      reader.readAsText(f);
+      reader.readAsText(file);
     });
-    document.getElementById('runFileBtn').addEventListener('click', () => {
-      if (uploadedContent) openInNewTab(uploadedContent);
+    runFileBtn.addEventListener('click', () => {
+      if (uploadedContent !== null) openInNewTab(uploadedContent);
     });
 
-    // Run code from textarea
+    // 2. Run code from textarea
     document.getElementById('runCodeBtn').addEventListener('click', () => {
       const code = document.getElementById('codeInput').value;
       if (!code.trim()) return alert('Paste some HTML code first!');
       openInNewTab(code);
     });
 
-    // Fetch & run from URL
+    // 3. Fetch HTML from URL
     document.getElementById('fetchUrlBtn').addEventListener('click', () => {
-      const u = document.getElementById('urlInput').value.trim();
-      if (!u) return alert('Enter a URL first');
-      fetch(u)
-        .then(r => r.ok ? r.text() : Promise.reject(`Status ${r.status}`))
+      const url = document.getElementById('urlInput').value.trim();
+      if (!url) return alert('Enter a URL first');
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error(`Status ${res.status}`);
+          return res.text();
+        })
         .then(html => openInNewTab(html))
-        .catch(err => alert('Fetch error: ' + err));
+        .catch(err => alert('Fetch error: ' + err.message));
     });
   </script>
 </body>
-</html>
+</html>`;
+      const w = window.open('about:blank', '_blank');
+      if (w) {
+        w.document.write(html);
+        w.document.close();
+      }
+    })();
   </script>
-
-  <script>
-    // immediately grab the template and spin up the executor
-    const tpl = document.getElementById('executor-template').textContent;
-    const blob = new Blob([tpl], { type: 'text/html' });
-    const url  = URL.createObjectURL(blob);
-    // replace current page with the executor page
-    window.location.replace(url);
-  </script>
-
-  <p>Loading…</p>
+</head>
+<body>
+  <!-- You can leave this page empty or add a message -->
+  <noscript>
+    Please enable JavaScript to launch the HTML Executor in a new tab.
+  </noscript>
 </body>
 </html>
