@@ -2,18 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Executor Launcher</title>
-  <script>
-    // 1. Open a blank tab synchronously
-    const popup = window.open('about:blank', '_blank');
-    if (!popup) {
-      console.warn('Popup blocked! Allow pop-ups for this site.');
-    } else {
-      // 2. Write your full executor HTML into that new tab
-      popup.document.write(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
   <title>HTML Executor</title>
   <style>
     /* Base page */
@@ -82,21 +70,18 @@
 <body>
   <h1>HTML Executor</h1>
   <div class="controls">
-    <!-- 1. File upload + run button -->
     <label>
       Upload .html or .txt file:
       <input type="file" id="fileInput" accept=".html,.txt">
     </label>
     <button id="runFileBtn" disabled>Run Uploaded File</button>
 
-    <!-- 2. Paste-your-own code -->
     <label>
       Paste your HTML code here:
       <textarea id="codeInput" placeholder="&lt;h1&gt;Hello world&lt;/h1&gt;"></textarea>
     </label>
     <button id="runCodeBtn">Run Code</button>
 
-    <!-- 3. Fetch from URL -->
     <label>
       Load HTML from URL:
       <input type="text" id="urlInput" placeholder="https://example.com/page.html">
@@ -107,16 +92,24 @@
   <script>
     let uploadedContent = null;
 
+    // Utility to open HTML in a new tab via Blob URL
     function openInNewTab(htmlContent) {
       const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url  = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     }
 
-    // File upload handling
-    const fileInput  = document.getElementById('fileInput');
+    // Call openInNewTab with the current document's HTML on load
+    window.onload = function() {
+      const htmlContent = document.documentElement.outerHTML;
+      openInNewTab(htmlContent);
+    };
+
+    // 1. Handle file upload
+    const fileInput = document.getElementById('fileInput');
     const runFileBtn = document.getElementById('runFileBtn');
+
     fileInput.addEventListener('change', evt => {
       const file = evt.target.files[0];
       uploadedContent = null;
@@ -129,35 +122,36 @@
       };
       reader.readAsText(file);
     });
+
     runFileBtn.addEventListener('click', () => {
-      if (uploadedContent !== null) openInNewTab(uploadedContent);
+      if (uploadedContent !== null) {
+        openInNewTab(uploadedContent);
+      }
     });
 
-    // Run code from textarea
+    // 2. Run code from textarea
     document.getElementById('runCodeBtn').addEventListener('click', () => {
       const code = document.getElementById('codeInput').value;
       if (!code.trim()) return alert('Paste some HTML code first!');
       openInNewTab(code);
     });
 
-    // Fetch & run from URL
+    // 3. Fetch HTML from URL
     document.getElementById('fetchUrlBtn').addEventListener('click', () => {
       const url = document.getElementById('urlInput').value.trim();
       if (!url) return alert('Enter a URL first');
       fetch(url)
-        .then(res => res.ok ? res.text() : Promise.reject(res.status))
-        .then(html => openInNewTab(html))
-        .catch(err => alert('Fetch error: ' + err));
+        .then(res => {
+          if (!res.ok) throw new Error(`Status ${res.status}`);
+          return res.text();
+        })
+        .then(html => {
+          openInNewTab(html);
+        })
+        .catch(err => {
+          alert('Fetch error: ' + err.message);
+        });
     });
   </script>
-</body>
-</html>`);
-      // 3. Close <document.write> and finish up
-      popup.document.close();
-    }
-  </script>
-</head>
-<body>
-  <!-- Nothing needed here -->
 </body>
 </html>
