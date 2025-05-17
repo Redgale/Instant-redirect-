@@ -4,161 +4,47 @@
   <meta charset="UTF-8">
   <title>HTML Executor</title>
   <style>
-    /* Base page */
-    body {
-      background-color: #2b0000;   /* very dark red */
-      color: #f0d0d0;              /* pale rose */
-      font-family: sans-serif;
-      margin: 1em;
-    }
-    h1 {
-      color: #ff5555;              /* bright accent red */
-      margin-bottom: 0.5em;
-    }
-    /* Container for controls */
-    .controls {
-      background-color: #330000;   /* dark red */
-      border: 1px solid #550000;   /* medium red border */
-      padding: 1em;
-      border-radius: 4px;
-    }
-    label {
-      display: block;
-      margin-top: 0.75em;
-      font-weight: bold;
-    }
-    /* Inputs and textarea */
-    input[type="file"],
-    input[type="text"],
-    textarea {
-      background-color: #440000;   /* deep red */
-      color: #f0d0d0;
-      border: 1px solid #660000;
-      border-radius: 3px;
-      padding: 0.5em;
-      font-family: monospace;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    textarea {
-      height: 20vh;
-      resize: vertical;
-    }
-    /* Buttons */
-    button {
-      background-color: #770000;   /* medium-dark red */
-      color: #f0d0d0;
-      border: 1px solid #990000;   /* slightly brighter border */
-      border-radius: 3px;
-      padding: 0.5em 1em;
-      margin-top: 0.5em;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button:disabled {
-      background-color: #550000;
-      border-color: #770000;
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-    button:hover:not(:disabled) {
-      background-color: #990000;   /* lighter on hover */
-      border-color: #bb0000;
-    }
+    /* (your existing styles here…) */
   </style>
 </head>
 <body>
   <h1>HTML Executor</h1>
   <div class="controls">
-    <!-- 1. File upload + run button -->
-    <label>
-      Upload .html or .txt file:
-      <input type="file" id="fileInput" accept=".html,.txt">
-    </label>
-    <button id="runFileBtn" disabled>Run Uploaded File</button>
-
-    <!-- 2. Paste-your-own code -->
-    <label>
-      Paste your HTML code here:
-      <textarea id="codeInput" placeholder="&lt;h1&gt;Hello world&lt;/h1&gt;"></textarea>
-    </label>
-    <button id="runCodeBtn">Run Code</button>
-
-    <!-- 3. Fetch from URL -->
-    <label>
-      Load HTML from URL:
-      <input type="text" id="urlInput" placeholder="https://example.com/page.html">
-    </label>
-    <button id="fetchUrlBtn">Fetch & Run</button>
+    <!-- (your existing controls here…) -->
   </div>
 
   <script>
-    // Utility to open HTML in a new tab via Blob URL
+    // 0. Immediately open a blank window. This must run synchronously to avoid popup blockers.
+    const newWin = window.open('about:blank', '_blank');
+    if (!newWin) {
+      console.warn('Popup blocked! Please allow popups for this site to auto-open the executor.');
+    }
+
+    // Utility to open arbitrary HTML in *another* new tab (for your controls)
     function openInNewTab(htmlContent) {
       const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
-      // revoke after a minute
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     }
 
-    // 1. Handle file upload
-    let uploadedContent = null;
-    const fileInput = document.getElementById('fileInput');
-    const runFileBtn = document.getElementById('runFileBtn');
+    // (Your existing upload / paste / fetch handlers here…)
+    // …
 
-    fileInput.addEventListener('change', evt => {
-      const file = evt.target.files[0];
-      uploadedContent = null;
-      runFileBtn.disabled = true;
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        uploadedContent = e.target.result;
-        runFileBtn.disabled = false;
-      };
-      reader.readAsText(file);
-    });
-
-    runFileBtn.addEventListener('click', () => {
-      if (uploadedContent !== null) {
-        openInNewTab(uploadedContent);
-      }
-    });
-
-    // 2. Run code from textarea
-    document.getElementById('runCodeBtn').addEventListener('click', () => {
-      const code = document.getElementById('codeInput').value;
-      if (!code.trim()) return alert('Paste some HTML code first!');
-      openInNewTab(code);
-    });
-
-    // 3. Fetch HTML from URL
-    document.getElementById('fetchUrlBtn').addEventListener('click', () => {
-      const url = document.getElementById('urlInput').value.trim();
-      if (!url) return alert('Enter a URL first');
-      fetch(url)
-        .then(res => {
-          if (!res.ok) throw new Error(`Status ${res.status}`);
-          return res.text();
-        })
-        .then(html => {
-          openInNewTab(html);
-        })
-        .catch(err => {
-          alert('Fetch error: ' + err.message);
-        });
-    });
-
-    // --- AUTO-OPEN ON PAGE LOAD ---
-    // As soon as the DOM is ready, serialize the entire document
-    // (including DOCTYPE) and open it in a new about:blank tab.
+    // 1. Once the DOM is ready, serialize this very page and load it into the already-opened window.
     document.addEventListener('DOMContentLoaded', () => {
-      // Serialize the document, including doctype
-      const doctype = new XMLSerializer()
-        .serializeToString(document.doctype);
-      const html = doctype + '\n' + document.documentElement.outerHTML;
-      openInNewTab(html);
+      if (!newWin) return;   // nothing to do if it was blocked
+
+      // Serialize DOCTYPE + full HTML
+      const doctype = new XMLSerializer().serializeToString(document.doctype);
+      const html    = doctype + '\n' + document.documentElement.outerHTML;
+
+      // Create a Blob URL and redirect the new window there
+      const blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+      newWin.location.href = blobUrl;
+
+      // Clean up when done
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     });
   </script>
 </body>
